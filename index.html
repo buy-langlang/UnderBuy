@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UnderBuy</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: #2a2a2a;
+    --accent: #e0e0e0;
+    --accent2: #ffffff;
+    --muted: #666;
+    --tag: #222;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--accent);
+    font-family: 'Montserrat', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+  }
+
+  .header-bg {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #111 0%, #1a1a1a 40%, #0d0d0d 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 30px,
+      rgba(255,255,255,0.015) 30px,
+      rgba(255,255,255,0.015) 31px
+    );
+  }
+
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    letter-spacing: 8px;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 60px rgba(255,255,255,0.1);
+  }
+
+  .header-title span {
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.4);
+  }
+
+  /* PROFILE ROW */
+  .profile-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 16px 0;
+  }
+
+  .avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .profile-info h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+
+  .profile-info p {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 1px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 20px;
+    padding: 12px 16px 0;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ACTION BUTTONS */
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px 0;
+  }
+
+  .btn-primary {
+    flex: 1;
+    padding: 11px;
+    background: #fff;
+    color: #000;
+    border: none;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:active { transform: scale(0.98); background: #e0e0e0; }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 11px;
+    background: transparent;
+    color: #fff;
+    border: 1px solid var(--border);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:active { background: var(--surface2); }
+
+  .btn-icon {
+    width: 44px;
+    padding: 11px;
+    background: transparent;
+    color: #fff;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-icon:active { background: var(--surface2); }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 16px 0;
+  }
+
+  /* CATALOG LABEL */
+  .catalog-label {
+    padding: 14px 16px 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: var(--muted);
+  }
+
+  /* CATEGORIES */
+  .categories {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .categories::-webkit-scrollbar { display: none; }
+
+  .cat-btn {
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .cat-btn.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+
+  .cat-btn:active { transform: scale(0.97); }
+
+  /* PRODUCT GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    padding: 0 2px 80px;
+  }
+
+  .product-card {
+    position: relative;
+    background: var(--surface);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .product-card:active { transform: scale(0.98); }
+
+  .product-img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%);
+  }
+
+  .tag-new {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #fff;
+    color: #000;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 3px 7px;
+    z-index: 2;
+  }
+
+  .tag-sale {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #c0392b;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 3px 7px;
+    z-index: 2;
+  }
+
+  .product-info {
+    padding: 10px 10px 12px;
+  }
+
+  .product-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #ddd;
+    letter-spacing: 0.3px;
+    line-height: 1.4;
+  }
+
+  .product-brand {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .product-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: #fff;
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  .product-price .old-price {
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: line-through;
+    margin-left: 4px;
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+    padding: 8px 16px;
+  }
+
+  .nav-item.active { opacity: 1; }
+  .nav-item:active { opacity: 0.7; }
+
+  .nav-icon { font-size: 18px; }
+
+  .nav-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    width: 100%;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 20px 16px 40px;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 22px;
+    cursor: pointer;
+  }
+
+  .modal-img {
+    width: 100%;
+    height: 220px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 70px;
+    margin-bottom: 16px;
+  }
+
+  .modal-brand { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
+  .modal-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .modal-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: #fff;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+
+  .modal-desc { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+
+  .modal-buy {
+    width: 100%;
+    padding: 14px;
+    background: #fff;
+    color: #000;
+    border: none;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .modal-buy:active { background: #e0e0e0; transform: scale(0.99); }
+
+  /* FADE IN */
+  .product-card {
+    animation: fadeIn 0.4s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-bg">
+    <div class="header-title">Under<span>Buy</span></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="profile-row">
+  <div class="avatar">🖤</div>
+  <div class="profile-info">
+    <h2>UnderBuy</h2>
+    <p>@underbuy</p>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <span class="stat-num" id="itemCount">0</span>
+    <span class="stat-label">Товаров</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">6</span>
+    <span class="stat-label">Категорий</span>
+  </div>
+</div>
+
+<div class="action-buttons">
+  <button class="btn-primary">Написать</button>
+  <button class="btn-secondary">Поделиться</button>
+  <button class="btn-icon">↗</button>
+</div>
+
+<div class="divider"></div>
+<div class="catalog-label">КАТАЛОГ</div>
+
+<!-- CATEGORIES -->
+<div class="categories">
+  <button class="cat-btn active" onclick="filterCat('all', this)">Все</button>
+  <button class="cat-btn" onclick="filterCat('shoes', this)">Обувь</button>
+  <button class="cat-btn" onclick="filterCat('outer', this)">Верхняя одежда</button>
+  <button class="cat-btn" onclick="filterCat('hats', this)">Головные уборы</button>
+  <button class="cat-btn" onclick="filterCat('pants', this)">Штаны/Джинсы/Юбки</button>
+  <button class="cat-btn" onclick="filterCat('acc', this)">Аксессуары</button>
+  <button class="cat-btn" onclick="filterCat('other', this)">Прочее</button>
+</div>
+
+<!-- GRID -->
+<div class="grid" id="grid"></div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Лента</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">🔍</span>
+    <span class="nav-label">Поиск</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">➕</span>
+    <span class="nav-label">Подача</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">🤍</span>
+    <span class="nav-label">Избранное</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">👤</span>
+    <span class="nav-label">Профиль</span>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title"></span>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-img" id="modal-img"></div>
+    <div class="modal-brand" id="modal-brand"></div>
+    <div class="modal-name" id="modal-name"></div>
+    <div class="modal-price" id="modal-price"></div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <button class="modal-buy" onclick="orderItem()">ЗАКАЗАТЬ</button>
+  </div>
+</div>
+
+<script>
+// Инициализация Telegram Web App
+if (window.Telegram && window.Telegram.WebApp) {
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+}
+
+const products = [
+  { id:1, name: "Кожаные брюки", brand: "UnderBuy", price: "8 500 ₽", emoji: "👖", cat: "pants", tag: "new", desc: "Прямой крой, натуральная кожа. Размеры S-XL." },
+  { id:2, name: "Льняная сумка", brand: "UnderBuy", price: "3 200 ₽", emoji: "👜", cat: "acc", tag: null, desc: "Вместительная сумка из льна. Унисекс." },
+  { id:3, name: "Оверсайз куртка", brand: "UnderBuy", price: "12 000 ₽", oldPrice: "15 000 ₽", emoji: "🧥", cat: "outer", tag: "sale", desc: "Свободный крой, плотная ткань. Осень-зима." },
+  { id:4, name: "Панама рибстоп", brand: "UnderBuy", price: "2 100 ₽", emoji: "🎩", cat: "hats", tag: "new", desc: "Материал рибстоп, регулируемый размер." },
+  { id:5, name: "Грубые берцы", brand: "UnderBuy", price: "9 800 ₽", emoji: "👢", cat: "shoes", tag: null, desc: "Натуральная кожа, толстая подошва. 36-46." },
+  { id:6, name: "Широкие джинсы", brand: "UnderBuy", price: "5 500 ₽", emoji: "👖", cat: "pants", tag: null, desc: "Baggy fit, плотный деним 14oz." },
+  { id:7, name: "Шерстяной берет", brand: "UnderBuy", price: "1 800 ₽", emoji: "🧢", cat: "hats", tag: null, desc: "100% шерсть, классический крой." },
+  { id:8, name: "Цепь на шею", brand: "UnderBuy", price: "1 500 ₽", emoji: "⛓️", cat: "acc", tag: "new", desc: "Нержавеющая сталь, длина 60 см." },
+  { id:9, name: "Лоферы кожа", brand: "UnderBuy", price: "7 200 ₽", emoji: "👞", cat: "shoes", tag: null, desc: "Классические лоферы, кожаная подкладка." },
+  { id:10, name: "Плащ оверсайз", brand: "UnderBuy", price: "14 500 ₽", emoji: "🧥", cat: "outer", tag: null, desc: "Длинный крой, водоотталкивающая ткань." },
+];
+
+let currentProduct = null;
+
+function renderProducts(list) {
+  const grid = document.getElementById('grid');
+  document.getElementById('itemCount').textContent = list.length;
+  grid.innerHTML = list.map((p, i) => `
+    <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="openModal(${p.id})">
+      <div class="product-img">
+        ${p.tag === 'new' ? '<span class="tag-new">NEW</span>' : ''}
+        ${p.tag === 'sale' ? '<span class="tag-sale">SALE</span>' : ''}
+        ${p.emoji}
+      </div>
+      <div class="product-info">
+        <div class="product-brand">${p.brand}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">
+          ${p.price}
+          ${p.oldPrice ? `<span class="old-price">${p.oldPrice}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCat(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = cat === 'all' ? products : products.filter(p => p.cat === cat);
+  renderProducts(filtered);
+}
+
+function openModal(id) {
+  currentProduct = products.find(p => p.id === id);
+  if (!currentProduct) return;
+  document.getElementById('modal-title').textContent = currentProduct.name;
+  document.getElementById('modal-img').textContent = currentProduct.emoji;
+  document.getElementById('modal-brand').textContent = currentProduct.brand;
+  document.getElementById('modal-name').textContent = currentProduct.name;
+  document.getElementById('modal-price').textContent = currentProduct.price;
+  document.getElementById('modal-desc').textContent = currentProduct.desc;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal')) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function orderItem() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.sendData(JSON.stringify({
+      action: 'order',
+      product: currentProduct.name,
+      price: currentProduct.price
+    }));
+  } else {
+    alert('Заявка на ' + currentProduct.name + ' отправлена!');
+  }
+  closeModalDirect();
+}
+
+renderProducts(products);
+</script>
+</body>
+</html>
