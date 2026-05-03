@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UnderBuy</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1c1c1c;
+    --border: #2a2a2a; --accent: #e0e0e0; --muted: #666;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--accent); font-family: 'Montserrat', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .header { width: 100%; height: 180px; overflow: hidden; }
+  .header-bg {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #111 0%, #1a1a1a 40%, #0d0d0d 100%);
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .header-bg::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, transparent, transparent 30px, rgba(255,255,255,0.015) 30px, rgba(255,255,255,0.015) 31px);
+  }
+  .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 64px; letter-spacing: 8px; color: #fff; position: relative; z-index: 1; text-shadow: 0 0 60px rgba(255,255,255,0.1); }
+  .header-title span { color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.4); }
+
+  .profile-row { display: flex; align-items: center; gap: 14px; padding: 16px 16px 0; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .profile-info h2 { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: #fff; }
+  .profile-info p { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-top: 1px; }
+
+  .stats-row { display: flex; gap: 20px; padding: 12px 16px 0; }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #fff; letter-spacing: 1px; }
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .action-buttons { display: flex; gap: 10px; padding: 14px 16px 0; }
+  .btn-primary { flex: 1; padding: 11px; background: #fff; color: #000; border: none; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+  .btn-primary:active { transform: scale(0.98); background: #e0e0e0; }
+  .btn-secondary { flex: 1; padding: 11px; background: transparent; color: #fff; border: 1px solid var(--border); font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; }
+  .btn-secondary:active { background: var(--surface2); }
+  .btn-icon { width: 44px; padding: 11px; background: transparent; color: #fff; border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s; flex-shrink: 0; }
+
+  .divider { height: 1px; background: var(--border); margin: 16px 16px 0; }
+  .catalog-label { padding: 14px 16px 10px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 3px; color: var(--muted); }
+
+  .categories { display: flex; gap: 8px; padding: 0 16px 14px; overflow-x: auto; scrollbar-width: none; }
+  .categories::-webkit-scrollbar { display: none; }
+  .cat-btn { padding: 7px 14px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; transition: all 0.2s; border-radius: 2px; }
+  .cat-btn.active { background: #fff; color: #000; border-color: #fff; }
+  .cat-btn:active { transform: scale(0.97); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 0 2px 80px; }
+
+  .product-card { position: relative; background: var(--surface); cursor: pointer; overflow: hidden; transition: transform 0.2s; animation: fadeIn 0.4s ease both; }
+  .product-card:active { transform: scale(0.98); }
+
+  .product-img { width: 100%; aspect-ratio: 3/4; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; overflow: hidden; }
+  .product-img img { width: 100%; height: 100%; object-fit: cover; }
+  .product-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%); pointer-events: none; }
+
+  .tag-new { position: absolute; top: 8px; left: 8px; background: #fff; color: #000; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 7px; z-index: 2; }
+  .tag-sale { position: absolute; top: 8px; left: 8px; background: #c0392b; color: #fff; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 7px; z-index: 2; }
+
+  .fav-btn-card { position: absolute; top: 8px; right: 8px; z-index: 3; background: rgba(0,0,0,0.55); border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: transform 0.2s; }
+  .fav-btn-card:active { transform: scale(1.2); }
+
+  .product-info { padding: 10px 10px 12px; }
+  .product-brand { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+  .product-name { font-size: 12px; font-weight: 500; color: #ddd; letter-spacing: 0.3px; line-height: 1.4; }
+  .product-price { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: #fff; margin-top: 6px; letter-spacing: 1px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: rgba(10,10,10,0.97); backdrop-filter: blur(10px); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-around; z-index: 100; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; opacity: 0.4; transition: opacity 0.2s; padding: 8px 16px; }
+  .nav-item.active { opacity: 1; }
+  .nav-icon { font-size: 18px; }
+  .nav-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; font-weight: 500; }
+
+  /* FAV PAGE */
+  .fav-page-header { padding: 20px 16px 10px; font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 4px; color: #fff; }
+  .fav-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; gap: 12px; text-align: center; }
+  .fav-empty-icon { font-size: 48px; opacity: 0.3; }
+  .fav-empty-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { width: 100%; background: var(--surface); border-top: 1px solid var(--border); padding: 20px 16px 40px; animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+
+  .modal-img { width: 100%; height: 260px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 70px; margin-bottom: 16px; overflow: hidden; }
+  .modal-img img { width: 100%; height: 100%; object-fit: cover; }
+
+  .modal-brand { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
+  .modal-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .modal-price { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: #fff; letter-spacing: 2px; margin-bottom: 6px; }
+  .modal-desc { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-buy { flex: 1; padding: 14px; background: #fff; color: #000; border: none; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; }
+  .modal-buy:active { background: #e0e0e0; }
+  .modal-fav { width: 50px; background: transparent; color: #fff; border: 1px solid var(--border); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .modal-fav:active { background: var(--surface2); }
+
+  .modal-contact { width: 100%; padding: 14px; background: transparent; color: #fff; border: 1px solid var(--border); font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; margin-top: 10px; }
+  .modal-contact:active { background: var(--surface2); }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- CATALOG PAGE -->
+<div class="page active" id="page-catalog">
+  <div class="header">
+    <div class="header-bg">
+      <div class="header-title">Under<span>Buy</span></div>
+    </div>
+  </div>
+
+  <div class="profile-row">
+    <div class="avatar">🖤</div>
+    <div class="profile-info">
+      <h2>UnderBuy</h2>
+      <p>@underbuy</p>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <span class="stat-num" id="itemCount">0</span>
+      <span class="stat-label">Товаров</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">6</span>
+      <span class="stat-label">Категорий</span>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn-primary" onclick="openTG()">Написать</button>
+    <button class="btn-secondary">Поделиться</button>
+    <button class="btn-icon">↗</button>
+  </div>
+
+  <div class="divider"></div>
+  <div class="catalog-label">КАТАЛОГ</div>
+
+  <div class="categories">
+    <button class="cat-btn active" onclick="filterCat('all', this)">Все</button>
+    <button class="cat-btn" onclick="filterCat('shoes', this)">Обувь</button>
+    <button class="cat-btn" onclick="filterCat('outer', this)">Верхняя одежда</button>
+    <button class="cat-btn" onclick="filterCat('hats', this)">Головные уборы</button>
+    <button class="cat-btn" onclick="filterCat('pants', this)">Штаны/Джинсы/Юбки</button>
+    <button class="cat-btn" onclick="filterCat('acc', this)">Аксессуары</button>
+    <button class="cat-btn" onclick="filterCat('other', this)">Прочее</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- FAVOURITES PAGE -->
+<div class="page" id="page-fav">
+  <div class="fav-page-header">ИЗБРАННОЕ</div>
+  <div class="grid" id="fav-grid"></div>
+  <div class="fav-empty" id="fav-empty">
+    <div class="fav-empty-icon">🤍</div>
+    <div class="fav-empty-text">Здесь будут товары,<br>которые ты добавишь в избранное</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('catalog', this)">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Лента</span>
+  </div>
+  <div class="nav-item" onclick="showPage('catalog', this)">
+    <span class="nav-icon">🔍</span>
+    <span class="nav-label">Поиск</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">➕</span>
+    <span class="nav-label">Подача</span>
+  </div>
+  <div class="nav-item" onclick="showPage('fav', this)" id="nav-fav">
+    <span class="nav-icon" id="nav-fav-icon">🤍</span>
+    <span class="nav-label">Избранное</span>
+  </div>
+  <div class="nav-item">
+    <span class="nav-icon">👤</span>
+    <span class="nav-label">Профиль</span>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title"></span>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-img" id="modal-img"></div>
+    <div class="modal-brand" id="modal-brand"></div>
+    <div class="modal-name" id="modal-name"></div>
+    <div class="modal-price" id="modal-price"></div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <div class="modal-actions">
+      <button class="modal-buy" onclick="goToShop()">ПЕРЕЙТИ В МАГАЗИН</button>
+      <button class="modal-fav" id="modal-fav-btn" onclick="toggleFavFromModal()">🤍</button>
+    </div>
+    <button class="modal-contact" onclick="contactSeller()">НАПИСАТЬ ПРОДАВЦУ</button>
+  </div>
+</div>
+
+<script>
+if (window.Telegram && window.Telegram.WebApp) {
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+}
+
+// ============================================================
+// ТОВАРЫ — добавляй сюда новые позиции
+// image: прямая ссылка на фото (jpg/png)
+// cat: shoes / outer / hats / pants / acc / other
+// tag: "new" / "sale" / null
+// ============================================================
+const products = [
+  {
+    id: 1,
+    name: "Runner LED",
+    brand: "Balenciaga",
+    price: "320 BYN / 8 550 ₽",
+    image: "https://images.stockx.com/images/Balenciaga-Runner-Black-Red.jpg?fit=fill&bg=FFFFFF&w=700&h=500&auto=format,compress&trim=color&q=90&dpr=2&updated_at=1677253608",
+    cat: "shoes",
+    tag: "new",
+    desc: "Размер: 35–46 (лучшее исполнение). Культовые кроссовки Balenciaga Runner в чёрном цвете с красными вставками на подошве. Массивная подошва, комбинированные материалы."
+  },
+  // 👇 Добавляй новые товары здесь по образцу выше
+];
+// ============================================================
+
+let favorites = JSON.parse(localStorage.getItem('ub_favs') || '[]');
+let currentProduct = null;
+
+function saveFavs() { localStorage.setItem('ub_favs', JSON.stringify(favorites)); }
+function isFav(id) { return favorites.includes(id); }
+
+function toggleFav(id, e) {
+  if (e) e.stopPropagation();
+  favorites = isFav(id) ? favorites.filter(f => f !== id) : [...favorites, id];
+  saveFavs();
+  const btn = document.getElementById('fav-card-' + id);
+  if (btn) btn.textContent = isFav(id) ? '❤️' : '🤍';
+  document.getElementById('nav-fav-icon').textContent = favorites.length > 0 ? '❤️' : '🤍';
+  if (document.getElementById('page-fav').classList.contains('active')) renderFavPage();
+}
+
+function toggleFavFromModal() {
+  if (!currentProduct) return;
+  toggleFav(currentProduct.id, null);
+  document.getElementById('modal-fav-btn').textContent = isFav(currentProduct.id) ? '❤️' : '🤍';
+}
+
+function cardHTML(p, i) {
+  return `
+    <div class="product-card" style="animation-delay:${i*0.05}s" onclick="openModal(${p.id})">
+      <div class="product-img">
+        ${p.tag === 'new' ? '<span class="tag-new">NEW</span>' : ''}
+        ${p.tag === 'sale' ? '<span class="tag-sale">SALE</span>' : ''}
+        <button class="fav-btn-card" id="fav-card-${p.id}" onclick="toggleFav(${p.id},event)">${isFav(p.id)?'❤️':'🤍'}</button>
+        ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '👟'}
+      </div>
+      <div class="product-info">
+        <div class="product-brand">${p.brand}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">${p.price}</div>
+      </div>
+    </div>`;
+}
+
+function renderProducts(list) {
+  document.getElementById('itemCount').textContent = products.length;
+  document.getElementById('grid').innerHTML = list.map(cardHTML).join('');
+}
+
+function renderFavPage() {
+  const favs = products.filter(p => isFav(p.id));
+  document.getElementById('fav-empty').style.display = favs.length ? 'none' : 'flex';
+  document.getElementById('fav-grid').innerHTML = favs.map(cardHTML).join('');
+}
+
+function filterCat(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts(cat === 'all' ? products : products.filter(p => p.cat === cat));
+}
+
+function showPage(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  if (name === 'fav') renderFavPage();
+}
+
+function openModal(id) {
+  currentProduct = products.find(p => p.id === id);
+  if (!currentProduct) return;
+  document.getElementById('modal-title').textContent = currentProduct.name;
+  document.getElementById('modal-img').innerHTML = currentProduct.image
+    ? `<img src="${currentProduct.image}" alt="${currentProduct.name}">` : '👟';
+  document.getElementById('modal-brand').textContent = currentProduct.brand;
+  document.getElementById('modal-name').textContent = currentProduct.name;
+  document.getElementById('modal-price').textContent = currentProduct.price;
+  document.getElementById('modal-desc').textContent = currentProduct.desc;
+  document.getElementById('modal-fav-btn').textContent = isFav(currentProduct.id) ? '❤️' : '🤍';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modal')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modal').classList.remove('open'); }
+
+function orderItem() {
+  if (window.Telegram?.WebApp) {
+    window.Telegram.WebApp.sendData(JSON.stringify({ action: 'order', product: currentProduct.name, price: currentProduct.price }));
+  } else {
+    alert('Заявка на ' + currentProduct.name + ' отправлена!');
+  }
+  closeModalDirect();
+}
+
+function goToShop() {
+  closeModalDirect();
+  showPage('catalog', document.querySelector('.nav-item'));
+}
+
+function contactSeller() {
+  window.open('https://t.me/und3rme', '_blank');
+}
+
+function openTG() { window.open('https://t.me/und3rme', '_blank'); }
+
+renderProducts(products);
+document.getElementById('nav-fav-icon').textContent = favorites.length > 0 ? '❤️' : '🤍';
+</script>
+</body>
+</html>
