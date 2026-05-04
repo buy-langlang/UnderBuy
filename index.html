@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cloud Nine</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--border:#2a2a2a;--accent:#e0e0e0;--muted:#666;--red:#c0392b;--gold:#f0c060;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--accent);font-family:'Montserrat',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:70px;}
+.page{display:none;}.page.active{display:block;}
+
+.header{width:100%;height:155px;overflow:hidden;}
+.header-bg{width:100%;height:100%;background:linear-gradient(135deg,#111 0%,#1a1a1a 50%,#0d0d0d 100%);display:flex;align-items:center;justify-content:center;position:relative;}
+.header-bg::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,0.012) 30px,rgba(255,255,255,0.012) 31px);}
+.header-title{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:8px;color:#fff;position:relative;z-index:1;}
+.header-title span{color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,0.35);}
+
+.search-wrap{padding:13px 13px 0;}
+.search-box{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);padding:10px 14px;}
+.search-box input{flex:1;background:none;border:none;outline:none;color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;}
+.search-box input::placeholder{color:var(--muted);}
+
+.cats{display:flex;gap:8px;padding:12px 13px;overflow-x:auto;scrollbar-width:none;}
+.cats::-webkit-scrollbar{display:none;}
+.cat-btn{padding:7px 13px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:500;white-space:nowrap;cursor:pointer;transition:all .2s;border-radius:2px;}
+.cat-btn.active{background:#fff;color:#000;border-color:#fff;}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 2px;}
+.product-card{background:var(--surface);cursor:pointer;overflow:hidden;position:relative;animation:fadeIn .3s ease both;}
+.product-card:active{opacity:.8;}
+.prod-img{width:100%;aspect-ratio:3/4;background:var(--surface2);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;font-size:36px;}
+.prod-img img{width:100%;height:100%;object-fit:cover;}
+.prod-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 55%);pointer-events:none;}
+.fav-btn{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;}
+.del-btn{position:absolute;top:8px;left:8px;z-index:3;background:rgba(180,0,0,.75);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;}
+.prod-info{padding:9px 10px 12px;}
+.prod-brand{font-size:10px;color:var(--muted);letter-spacing:.5px;}
+.prod-name{font-size:12px;font-weight:500;color:#ddd;line-height:1.4;margin-top:1px;}
+.prod-price{font-family:'Bebas Neue',sans-serif;font-size:17px;color:#fff;margin-top:5px;}
+.prod-seller{font-size:10px;color:var(--muted);margin-top:2px;cursor:pointer;text-decoration:underline;}
+.admin-badge{font-size:9px;background:var(--gold);color:#000;padding:1px 5px;border-radius:2px;font-weight:700;letter-spacing:1px;margin-left:4px;}
+
+.section-label{padding:14px 14px 8px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;color:var(--muted);}
+.empty{display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:10px;text-align:center;}
+.empty-icon{font-size:44px;opacity:.25;}
+.empty-text{font-size:13px;color:var(--muted);line-height:1.6;}
+.loading{display:flex;justify-content:center;padding:40px;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:62px;background:rgba(8,8,8,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;z-index:100;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:.35;transition:opacity .2s;padding:6px 12px;}
+.nav-item.active{opacity:1;}
+.nav-icon{font-size:19px;}
+.nav-label{font-size:9px;letter-spacing:.8px;text-transform:uppercase;font-weight:500;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:none;align-items:flex-end;}
+.overlay.open{display:flex;}
+.sheet{width:100%;background:var(--surface);border-top:1px solid var(--border);padding:18px 16px 36px;animation:slideUp .28s ease;max-height:92vh;overflow-y:auto;}
+.sheet-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.sheet-title{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:2px;}
+.close-btn{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px;}
+.sheet-img{width:100%;height:255px;background:var(--surface2);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:64px;margin-bottom:14px;position:relative;}
+.sheet-img img{width:100%;height:100%;object-fit:cover;}
+.img-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;}
+.img-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;}
+.img-dot.active{background:#fff;}
+.sheet-brand{font-size:11px;color:var(--muted);letter-spacing:1px;}
+.sheet-name{font-size:17px;font-weight:600;color:#fff;margin:4px 0 5px;}
+.sheet-price{font-family:'Bebas Neue',sans-serif;font-size:27px;color:#fff;letter-spacing:2px;}
+.sheet-size{font-size:12px;color:var(--muted);margin:4px 0 8px;}
+.sheet-desc{font-size:12px;color:#aaa;line-height:1.7;margin-bottom:10px;}
+.sheet-seller{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px;cursor:pointer;}
+.sheet-seller:active{opacity:.7;}
+.seller-avatar{width:36px;height:36px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.seller-info{flex:1;}
+.seller-name{font-size:13px;font-weight:600;color:#fff;}
+.seller-sub{font-size:11px;color:var(--muted);}
+.sheet-actions{display:flex;flex-direction:column;gap:10px;}
+.btn-white{width:100%;padding:14px;background:#fff;color:#000;border:none;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;cursor:pointer;}
+.btn-white:active{background:#ddd;}
+.btn-outline{width:100%;padding:13px;background:transparent;color:#fff;border:1px solid var(--border);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:500;letter-spacing:1.5px;cursor:pointer;}
+.btn-outline:active{background:var(--surface2);}
+.btn-red{width:100%;padding:13px;background:transparent;color:var(--red);border:1px solid var(--red);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;cursor:pointer;}
+.btn-red:active{background:rgba(192,57,43,.15);}
+.btn-gold{width:100%;padding:13px;background:transparent;color:var(--gold);border:1px solid var(--gold);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.5px;cursor:pointer;}
+.btn-gold:active{background:rgba(240,192,96,.1);}
+
+/* SELLER PAGE */
+.seller-page-header{padding:16px;}
+.back-btn{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px 8px 4px 0;}
+.seller-profile-top{display:flex;align-items:center;gap:14px;padding:4px 0 14px;}
+.seller-big-avatar{width:64px;height:64px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.seller-big-info h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;}
+.seller-big-info p{font-size:12px;color:var(--muted);margin-top:2px;}
+.seller-profile-stats{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.pstat{flex:1;text-align:center;padding:12px 0;}
+.pstat-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;}
+.pstat-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.btn-write-seller{margin:14px 16px 0;width:calc(100% - 32px);padding:13px;background:#fff;color:#000;border:none;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;letter-spacing:1.5px;cursor:pointer;}
+.banned-banner{margin:12px 16px 0;padding:10px 14px;background:rgba(192,57,43,.2);border:1px solid var(--red);color:var(--red);font-size:12px;font-weight:600;letter-spacing:1px;text-align:center;}
+
+/* REVIEWS */
+.reviews-section{padding:0 14px 14px;}
+.reviews-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0 10px;}
+.reviews-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;}
+.btn-add-review{padding:7px 14px;background:transparent;color:#fff;border:1px solid var(--border);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:500;cursor:pointer;}
+.review-card{background:var(--surface2);border:1px solid var(--border);padding:12px;margin-bottom:8px;}
+.review-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.review-author{font-size:12px;font-weight:600;color:#fff;}
+.review-stars{font-size:13px;}
+.review-text{font-size:12px;color:#aaa;line-height:1.6;}
+.review-date{font-size:10px;color:var(--muted);margin-top:4px;}
+.review-del{background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;margin-top:4px;}
+
+.review-form{padding:4px 0 0;}
+.stars-pick{display:flex;gap:8px;margin-bottom:14px;}
+.star-pick{font-size:26px;cursor:pointer;opacity:.3;transition:opacity .15s;}
+.star-pick.on{opacity:1;}
+
+/* SUBMIT */
+.submit-wrap{padding:16px;}
+.submit-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:#fff;margin-bottom:18px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.form-input{width:100%;background:var(--surface);border:1px solid var(--border);color:#fff;padding:11px 14px;font-family:'Montserrat',sans-serif;font-size:13px;outline:none;}
+.form-input:focus{border-color:#555;}
+.form-input::placeholder{color:var(--muted);}
+textarea.form-input{resize:vertical;min-height:80px;}
+.size-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.size-btn{padding:8px 14px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Montserrat',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;}
+.size-btn.selected{background:#fff;color:#000;border-color:#fff;}
+.photo-upload{border:1px dashed var(--border);padding:20px;text-align:center;cursor:pointer;}
+.photo-upload input{display:none;}
+.photo-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.photo-thumb{width:72px;height:72px;object-fit:cover;}
+.photo-thumb-wrap{position:relative;width:72px;height:72px;}
+.photo-remove{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.btn-submit{width:100%;padding:15px;background:#fff;color:#000;border:none;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;margin-top:20px;}
+.btn-submit:active{background:#ddd;}
+.btn-submit:disabled{background:#333;color:#666;cursor:not-allowed;}
+
+/* MY PROFILE */
+.my-profile-header{display:flex;align-items:center;gap:14px;padding:20px 16px 0;}
+.my-profile-stats{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:14px;}
+.fav-header{padding:20px 16px 10px;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;color:#fff;}
+
+/* ADMIN PAGE */
+.admin-wrap{padding:16px;}
+.admin-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:var(--gold);margin-bottom:4px;}
+.admin-sub{font-size:11px;color:var(--muted);margin-bottom:20px;}
+.admin-section{margin-bottom:24px;}
+.admin-section-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.user-row-info{flex:1;}
+.user-row-name{font-size:13px;font-weight:600;color:#fff;}
+.user-row-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.user-row-actions{display:flex;gap:6px;}
+.btn-ban{padding:6px 12px;background:var(--red);color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;border-radius:2px;}
+.btn-unban{padding:6px 12px;background:#2a7a2a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;border-radius:2px;}
+.admin-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.admin-stat-card{background:var(--surface);border:1px solid var(--border);padding:14px;text-align:center;}
+.admin-stat-num{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);}
+.admin-stat-label{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+
+/* CONFIRM */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--surface);border:1px solid var(--border);padding:24px 20px;width:100%;max-width:320px;text-align:center;}
+.confirm-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;margin-bottom:8px;}
+.confirm-text{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-yes{flex:1;padding:13px;background:var(--red);color:#fff;border:none;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.confirm-no{flex:1;padding:13px;background:transparent;color:#fff;border:1px solid var(--border);font-family:'Montserrat',sans-serif;font-size:13px;cursor:pointer;}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:10px 20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- FEED -->
+<div class="page active" id="page-feed">
+  <div class="header"><div class="header-bg"><div class="header-title">Cloud <span>Nine</span></div></div></div>
+  <div class="search-wrap"><div class="search-box"><span style="color:var(--muted);font-size:16px">🔍</span><input type="text" id="search-input" placeholder="Поиск товаров, брендов..." oninput="onSearch(this.value)"></div></div>
+  <div class="cats">
+    <button class="cat-btn active" onclick="filterCat('all',this)">Все</button>
+    <button class="cat-btn" onclick="filterCat('shoes',this)">Обувь</button>
+    <button class="cat-btn" onclick="filterCat('outer',this)">Верхняя одежда</button>
+    <button class="cat-btn" onclick="filterCat('hats',this)">Головные уборы</button>
+    <button class="cat-btn" onclick="filterCat('pants',this)">Штаны/Джинсы</button>
+    <button class="cat-btn" onclick="filterCat('acc',this)">Аксессуары</button>
+    <button class="cat-btn" onclick="filterCat('other',this)">Прочее</button>
+  </div>
+  <div class="section-label">КАТАЛОГ</div>
+  <div id="feed-grid" class="grid"></div>
+  <div id="feed-loading" class="loading"><div class="spinner"></div></div>
+  <div id="feed-empty" class="empty" style="display:none"><div class="empty-icon">📦</div><div class="empty-text">Товаров пока нет.<br>Будь первым — добавь свой!</div></div>
+</div>
+
+<!-- FAV -->
+<div class="page" id="page-fav">
+  <div class="fav-header">ИЗБРАННОЕ</div>
+  <div id="fav-grid" class="grid"></div>
+  <div id="fav-empty" class="empty" style="display:none"><div class="empty-icon">🤍</div><div class="empty-text">Здесь будут товары,<br>которые ты добавишь в избранное</div></div>
+</div>
+
+<!-- SUBMIT -->
+<div class="page" id="page-submit">
+  <div class="submit-wrap">
+    <div class="submit-title">ДОБАВИТЬ ТОВАР</div>
+    <div class="form-group">
+      <label class="form-label">Категория *</label>
+      <div class="cats" style="padding:0;margin-bottom:4px;">
+        <button class="cat-btn active" onclick="selectCat('shoes',this)">Обувь</button>
+        <button class="cat-btn" onclick="selectCat('outer',this)">Верхняя одежда</button>
+        <button class="cat-btn" onclick="selectCat('hats',this)">Головные уборы</button>
+        <button class="cat-btn" onclick="selectCat('pants',this)">Штаны/Джинсы</button>
+        <button class="cat-btn" onclick="selectCat('acc',this)">Аксессуары</button>
+        <button class="cat-btn" onclick="selectCat('other',this)">Прочее</button>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Размер *</label><div class="size-grid" id="size-grid"></div></div>
+    <div class="form-group"><label class="form-label">Бренд</label><input type="text" class="form-input" id="inp-brand" placeholder="Balenciaga, Nike..."></div>
+    <div class="form-group"><label class="form-label">Название *</label><input type="text" class="form-input" id="inp-name" placeholder="Название товара"></div>
+    <div class="form-group"><label class="form-label">Цена (₽) *</label><input type="number" class="form-input" id="inp-price" placeholder="5000"></div>
+    <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input" id="inp-desc" placeholder="Состояние, материал, детали..."></textarea></div>
+    <div class="form-group">
+      <label class="form-label">Фото * (до 5)</label>
+      <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
+        <div style="font-size:28px;margin-bottom:6px">📷</div>
+        <div style="font-size:12px;color:var(--muted)">Нажми чтобы добавить фото</div>
+        <input type="file" id="photo-input" accept="image/*" multiple onchange="onPhotos(this)">
+      </div>
+      <div class="photo-preview" id="photo-preview"></div>
+    </div>
+    <button class="btn-submit" id="btn-submit" onclick="submitProduct()">ОПУБЛИКОВАТЬ</button>
+  </div>
+</div>
+
+<!-- MY PROFILE -->
+<div class="page" id="page-profile">
+  <div class="my-profile-header">
+    <div class="seller-big-avatar">👤</div>
+    <div class="seller-big-info"><h2 id="my-profile-name">—</h2><p id="my-profile-user">—</p></div>
+  </div>
+  <div class="my-profile-stats">
+    <div class="pstat"><div class="pstat-num" id="my-items">0</div><div class="pstat-label">Товаров</div></div>
+    <div class="pstat"><div class="pstat-num" id="my-reviews">0</div><div class="pstat-label">Отзывов</div></div>
+  </div>
+  <div class="section-label">МОИ ТОВАРЫ</div>
+  <div id="my-grid" class="grid"></div>
+  <div id="my-empty" class="empty" style="display:none"><div class="empty-icon">🛍️</div><div class="empty-text">У тебя пока нет товаров.</div></div>
+</div>
+
+<!-- SELLER PROFILE -->
+<div class="page" id="page-seller">
+  <div class="seller-page-header">
+    <button class="back-btn" onclick="goBack()">← Назад</button>
+    <div id="sp-banned-banner" class="banned-banner" style="display:none">🚫 ПОЛЬЗОВАТЕЛЬ ЗАБЛОКИРОВАН</div>
+    <div class="seller-profile-top">
+      <div class="seller-big-avatar">👤</div>
+      <div class="seller-big-info"><h2 id="sp-name">—</h2><p id="sp-user">—</p></div>
+    </div>
+    <div class="seller-profile-stats">
+      <div class="pstat"><div class="pstat-num" id="sp-items">0</div><div class="pstat-label">Товаров</div></div>
+      <div class="pstat"><div class="pstat-num" id="sp-rating">—</div><div class="pstat-label">Рейтинг</div></div>
+      <div class="pstat"><div class="pstat-num" id="sp-reviews-count">0</div><div class="pstat-label">Отзывов</div></div>
+    </div>
+    <button class="btn-write-seller" id="sp-write-btn">НАПИСАТЬ ПРОДАВЦУ</button>
+    <div id="sp-admin-actions" style="display:none;padding:12px 0 0;display:none;">
+      <button class="btn-gold" id="sp-ban-btn" onclick="toggleBan()" style="margin:0 16px;width:calc(100% - 32px)">🚫 ЗАБЛОКИРОВАТЬ</button>
+    </div>
+  </div>
+  <div class="section-label">ТОВАРЫ ПРОДАВЦА</div>
+  <div id="sp-grid" class="grid"></div>
+  <div id="sp-empty" class="empty" style="display:none"><div class="empty-icon">📦</div><div class="empty-text">Нет товаров</div></div>
+  <div class="reviews-section">
+    <div class="reviews-header">
+      <div class="reviews-title">ОТЗЫВЫ</div>
+      <button class="btn-add-review" onclick="openReviewForm()">+ Оставить отзыв</button>
+    </div>
+    <div id="reviews-list"></div>
+    <div id="reviews-empty" class="empty" style="display:none"><div class="empty-icon">💬</div><div class="empty-text">Отзывов пока нет</div></div>
+  </div>
+</div>
+
+<!-- ADMIN PAGE -->
+<div class="page" id="page-admin">
+  <div class="admin-wrap">
+    <div class="admin-title">⚡ АДМИН ПАНЕЛЬ</div>
+    <div class="admin-sub">Только для @Lirik390</div>
+    <div class="admin-stats">
+      <div class="admin-stat-card"><div class="admin-stat-num" id="adm-products">0</div><div class="admin-stat-label">Товаров</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="adm-users">0</div><div class="admin-stat-label">Продавцов</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="adm-banned">0</div><div class="admin-stat-label">Заблокированных</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num" id="adm-reviews">0</div><div class="admin-stat-label">Отзывов</div></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-section-title">ВСЕ ПОЛЬЗОВАТЕЛИ</div>
+      <div id="adm-users-list"></div>
+    </div>
+    <div class="admin-section">
+      <div class="admin-section-title">ПОСЛЕДНИЕ ТОВАРЫ</div>
+      <div id="adm-products-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav">
+  <div class="nav-item active" onclick="showPage('feed',this)" id="nav-feed"><span class="nav-icon">🏠</span><span class="nav-label">Лента</span></div>
+  <div class="nav-item" onclick="showPage('fav',this)" id="nav-fav"><span class="nav-icon" id="nav-fav-icon">🤍</span><span class="nav-label">Избранное</span></div>
+  <div class="nav-item" onclick="showPage('submit',this)" id="nav-submit"><span class="nav-icon">➕</span><span class="nav-label">Продать</span></div>
+  <div class="nav-item" onclick="showPage('profile',this)" id="nav-profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></div>
+  <div class="nav-item" onclick="showPage('admin',this)" id="nav-admin" style="display:none"><span class="nav-icon">⚡</span><span class="nav-label">Админ</span></div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="overlay" id="prod-overlay" onclick="closeProd(event)">
+  <div class="sheet">
+    <div class="sheet-header"><span class="sheet-title" id="prod-title"></span><button class="close-btn" onclick="closeProdDirect()">✕</button></div>
+    <div class="sheet-img" id="prod-img-wrap"></div>
+    <div class="sheet-brand" id="prod-brand"></div>
+    <div class="sheet-name" id="prod-name"></div>
+    <div class="sheet-price" id="prod-price"></div>
+    <div class="sheet-size" id="prod-size"></div>
+    <div class="sheet-desc" id="prod-desc"></div>
+    <div class="sheet-seller" id="prod-seller-row" onclick="openSellerFromModal()">
+      <div class="seller-avatar">👤</div>
+      <div class="seller-info"><div class="seller-name" id="prod-seller-name"></div><div class="seller-sub" id="prod-seller-user"></div></div>
+      <div style="color:var(--muted);font-size:16px">›</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-white" id="prod-contact-btn">НАПИСАТЬ ПРОДАВЦУ</button>
+      <button class="btn-outline" onclick="closeProdDirect()">ПЕРЕЙТИ В МАГАЗИН</button>
+      <button class="btn-red" id="prod-delete-btn" style="display:none" onclick="confirmDeleteModal()">УДАЛИТЬ ТОВАР</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="overlay" id="review-overlay" onclick="closeReview(event)">
+  <div class="sheet">
+    <div class="sheet-header"><span class="sheet-title">ОСТАВИТЬ ОТЗЫВ</span><button class="close-btn" onclick="closeReviewDirect()">✕</button></div>
+    <div class="review-form">
+      <div class="form-label" style="margin-bottom:10px">Оценка *</div>
+      <div class="stars-pick" id="stars-pick">
+        <span class="star-pick" onclick="setStar(1)">⭐</span><span class="star-pick" onclick="setStar(2)">⭐</span>
+        <span class="star-pick" onclick="setStar(3)">⭐</span><span class="star-pick" onclick="setStar(4)">⭐</span>
+        <span class="star-pick" onclick="setStar(5)">⭐</span>
+      </div>
+      <div class="form-group"><label class="form-label">Комментарий *</label><textarea class="form-input" id="review-text" placeholder="Расскажи о сделке..."></textarea></div>
+      <button class="btn-submit" onclick="submitReview()">ОПУБЛИКОВАТЬ ОТЗЫВ</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">УДАЛИТЬ ТОВАР?</div>
+    <div class="confirm-text" id="confirm-text">Это действие нельзя отменить.</div>
+    <div class="confirm-btns">
+      <button class="confirm-yes" id="confirm-yes-btn">ПОДТВЕРДИТЬ</button>
+      <button class="confirm-no" onclick="document.getElementById('confirm-overlay').classList.remove('open')">ОТМЕНА</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, setDoc, doc, query, orderBy, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC20mgdZ829VPg8oKAxJ6M6gpQVC-nERxQ",
+  authDomain: "cloud-nine-d8eec.firebaseapp.com",
+  projectId: "cloud-nine-d8eec",
+  storageBucket: "cloud-nine-d8eec.firebasestorage.app",
+  messagingSenderId: "574831744864",
+  appId: "1:574831744864:web:2285111ed8d2ba13f83005"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
+
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const tgUser = tg?.initDataUnsafe?.user;
+
+// ====== ADMIN CONFIG ======
+const ADMIN_USERNAME = 'Lirik390';
+const isAdmin = tgUser?.username === ADMIN_USERNAME;
+// ==========================
+
+let currentUser = null;
+let allProducts = [];
+let bannedUsers = new Set();
+let allReviews = [];
+let currentCatFilter = 'all';
+let currentProduct = null;
+let currentSeller = null;
+let sellerReviews = [];
+let selectedCat = 'shoes';
+let selectedSizes = [];
+let uploadedPhotos = [];
+let favorites = JSON.parse(localStorage.getItem('cn_favs') || '[]');
+let selectedStars = 0;
+let prevPage = 'feed';
+let confirmCallback = null;
+
+const SIZES = {
+  shoes:['36','37','38','39','40','41','42','43','44','45'],
+  outer:['XS','S','M','L','XL','XXL'],
+  hats:['XS','S','M','L','XL','XXL'],
+  pants:['XS','S','M','L','XL','XXL','28','30','32','34','36'],
+  acc:['ONE SIZE'], other:['XS','S','M','L','XL','XXL','ONE SIZE'],
+};
+const CAT_EMOJI = {shoes:'👟',outer:'🧥',hats:'🧢',pants:'👖',acc:'⛓️',other:'📦'};
+
+// AUTH
+signInAnonymously(auth).then(c => {
+  currentUser = c.user;
+  init();
+}).catch(() => init());
+
+async function init() {
+  await loadBanned();
+  await loadProducts();
+  renderMyProfile();
+  if (isAdmin) {
+    document.getElementById('nav-admin').style.display = 'flex';
+  }
+  // Check if current user is banned
+  if (tgUser?.username && bannedUsers.has(tgUser.username)) {
+    document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:30px;text-align:center;"><div style="font-size:48px;margin-bottom:16px">🚫</div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;margin-bottom:8px">ДОСТУП ЗАКРЫТ</div><div style="font-size:13px;color:#666;line-height:1.6">Ваш аккаунт заблокирован администратором.</div></div>`;
+    return;
+  }
+}
+
+async function loadBanned() {
+  try {
+    const snap = await getDocs(collection(db, 'banned'));
+    bannedUsers = new Set(snap.docs.filter(d => d.id !== 'placeholder').map(d => d.id));
+  } catch(e) { bannedUsers = new Set(); }
+}
+
+async function loadProducts() {
+  try {
+    const snap = await getDocs(query(collection(db,'products'), orderBy('createdAt','desc')));
+    allProducts = snap.docs.map(d => ({id:d.id,...d.data()})).filter(p => !bannedUsers.has(p.sellerUsername));
+  } catch(e) { allProducts = []; }
+  document.getElementById('feed-loading').style.display = 'none';
+  renderFeed();
+}
+
+// ---- RENDER ----
+window.renderFeed = function() {
+  let list = [...allProducts];
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  if (currentCatFilter !== 'all') list = list.filter(p => p.cat === currentCatFilter);
+  if (q) list = list.filter(p => (p.name+' '+p.brand+' '+p.desc).toLowerCase().includes(q));
+  const grid = document.getElementById('feed-grid');
+  const empty = document.getElementById('feed-empty');
+  if (!list.length) { grid.innerHTML = ''; empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = list.map((p,i) => cardHTML(p,i)).join('');
+}
+
+window.onSearch = () => renderFeed();
+window.filterCat = function(cat, btn) {
+  document.querySelectorAll('#page-feed .cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); currentCatFilter = cat; renderFeed();
+}
+
+function cardHTML(p, i) {
+  const fav = favorites.includes(p.id);
+  const isOwner = currentUser && p.sellerId === currentUser.uid;
+  const canDelete = isOwner || isAdmin;
+  const img = p.photos?.length ? `<img src="${p.photos[0]}" alt="">` : `<span>${CAT_EMOJI[p.cat]||'📦'}</span>`;
+  const adminMark = (p.sellerUsername === ADMIN_USERNAME) ? `<span class="admin-badge">ADMIN</span>` : '';
+  return `<div class="product-card" style="animation-delay:${i*0.04}s" onclick="openProd('${p.id}')">
+    <div class="prod-img">
+      ${img}
+      <button class="fav-btn" onclick="toggleFav('${p.id}',event)">${fav?'❤️':'🤍'}</button>
+      ${canDelete?`<button class="del-btn" onclick="quickDelete('${p.id}',event)">✕</button>`:''}
+    </div>
+    <div class="prod-info">
+      <div class="prod-brand">${p.brand||''}</div>
+      <div class="prod-name">${p.name}</div>
+      <div class="prod-price">${Number(p.price).toLocaleString('ru')} ₽</div>
+      <div class="prod-seller" onclick="openSeller('${p.sellerId}','${(p.sellerName||'').replace(/'/g,'`')}','${p.sellerUsername||''}',event)">@${p.sellerUsername||'unknown'}${adminMark}</div>
+    </div>
+  </div>`;
+}
+
+// ---- PRODUCT MODAL ----
+window.openProd = function(id) {
+  currentProduct = allProducts.find(p => p.id === id);
+  if (!currentProduct) return;
+  const p = currentProduct;
+  document.getElementById('prod-title').textContent = p.name;
+  document.getElementById('prod-brand').textContent = p.brand||'';
+  document.getElementById('prod-name').textContent = p.name;
+  document.getElementById('prod-price').textContent = Number(p.price).toLocaleString('ru') + ' ₽';
+  document.getElementById('prod-size').textContent = p.sizes?.length ? 'Размеры: '+p.sizes.join(', ') : '';
+  document.getElementById('prod-desc').textContent = p.desc||'';
+  document.getElementById('prod-seller-name').textContent = p.sellerName||'Продавец';
+  document.getElementById('prod-seller-user').textContent = '@'+(p.sellerUsername||'unknown');
+  const wrap = document.getElementById('prod-img-wrap');
+  if (p.photos?.length) {
+    let cur = 0;
+    const render = () => { wrap.innerHTML = `<img src="${p.photos[cur]}" alt="">`+(p.photos.length>1?`<div class="img-dots">${p.photos.map((_,i)=>`<div class="img-dot${i===cur?' active':''}" onclick="event.stopPropagation();imgGo(${i})"></div>`).join('')}</div>`:''); };
+    window.imgGo = i => { cur=i; render(); }; render();
+  } else { wrap.innerHTML = CAT_EMOJI[p.cat]||'📦'; }
+  document.getElementById('prod-contact-btn').onclick = () => { if(p.sellerUsername) { const link='https://t.me/UnderBuy_Bot/underbuy'; const msg=encodeURIComponent('Привет! Меня интересует твой товар "'+p.name+'" за '+Number(p.price).toLocaleString('ru')+' ₽. Ссылка: '+link); window.open('https://t.me/'+p.sellerUsername+'?text='+msg,'_blank'); } };
+  const canDelete = (currentUser && p.sellerId === currentUser.uid) || isAdmin;
+  document.getElementById('prod-delete-btn').style.display = canDelete ? 'block' : 'none';
+  document.getElementById('prod-overlay').classList.add('open');
+}
+
+window.closeProd = e => { if(e.target===document.getElementById('prod-overlay')) closeProdDirect(); }
+window.closeProdDirect = () => document.getElementById('prod-overlay').classList.remove('open');
+window.openSellerFromModal = function() {
+  if (!currentProduct) return;
+  closeProdDirect();
+  openSeller(currentProduct.sellerId, currentProduct.sellerName, currentProduct.sellerUsername, null);
+}
+
+// ---- DELETE ----
+window.quickDelete = function(id, e) {
+  e.stopPropagation();
+  currentProduct = allProducts.find(p => p.id === id);
+  showConfirm('УДАЛИТЬ ТОВАР?', 'Это действие нельзя отменить.', deleteProduct);
+}
+
+window.confirmDeleteModal = () => showConfirm('УДАЛИТЬ ТОВАР?', 'Это действие нельзя отменить.', deleteProduct);
+
+async function deleteProduct() {
+  if (!currentProduct) return;
+  try {
+    await deleteDoc(doc(db,'products',currentProduct.id));
+    allProducts = allProducts.filter(p => p.id !== currentProduct.id);
+    closeProdDirect(); renderFeed(); renderMyProfileProducts();
+    showToast('Товар удалён');
+  } catch(e) { showToast('Ошибка удаления'); }
+}
+
+// ---- SELLER PROFILE ----
+window.openSeller = async function(sellerId, sellerName, sellerUsername, e) {
+  if (e) e.stopPropagation();
+  prevPage = document.querySelector('.page.active')?.id?.replace('page-','') || 'feed';
+  currentSeller = { sellerId, sellerName, sellerUsername };
+  const isBanned = bannedUsers.has(sellerUsername);
+
+  document.getElementById('sp-name').textContent = sellerName||'Продавец';
+  document.getElementById('sp-user').textContent = '@'+(sellerUsername||'unknown');
+  document.getElementById('sp-banned-banner').style.display = isBanned ? 'block' : 'none';
+  document.getElementById('sp-write-btn').onclick = () => { if(sellerUsername) window.open('https://t.me/'+sellerUsername,'_blank'); };
+
+  // Admin actions on seller profile
+  const adminActions = document.getElementById('sp-admin-actions');
+  if (isAdmin && sellerUsername !== ADMIN_USERNAME) {
+    adminActions.style.display = 'block';
+    const banBtn = document.getElementById('sp-ban-btn');
+    banBtn.textContent = isBanned ? '✅ РАЗБЛОКИРОВАТЬ' : '🚫 ЗАБЛОКИРОВАТЬ';
+    banBtn.className = isBanned ? 'btn-gold' : 'btn-red';
+    banBtn.style.margin = '0 16px'; banBtn.style.width = 'calc(100% - 32px)';
+  } else { adminActions.style.display = 'none'; }
+
+  const prods = allProducts.filter(p => p.sellerId === sellerId);
+  document.getElementById('sp-items').textContent = prods.length;
+  document.getElementById('sp-empty').style.display = prods.length ? 'none' : 'flex';
+  document.getElementById('sp-grid').innerHTML = prods.map(cardHTML).join('');
+
+  await loadSellerReviews(sellerId);
+  showPage('seller', null);
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+window.toggleBan = async function() {
+  if (!currentSeller || !isAdmin) return;
+  const username = currentSeller.sellerUsername;
+  const isBanned = bannedUsers.has(username);
+  try {
+    if (isBanned) {
+      await deleteDoc(doc(db,'banned',username));
+      bannedUsers.delete(username);
+      showToast('Пользователь разблокирован');
+    } else {
+      await setDoc(doc(db,'banned',username), { username, bannedAt: serverTimestamp() });
+      bannedUsers.add(username);
+      showToast('Пользователь заблокирован 🚫');
+    }
+    await loadProducts();
+    openSeller(currentSeller.sellerId, currentSeller.sellerName, currentSeller.sellerUsername, null);
+  } catch(e) { showToast('Ошибка'); }
+}
+
+window.goBack = () => showPage(prevPage, document.getElementById('nav-'+prevPage));
+
+// ---- REVIEWS ----
+async function loadSellerReviews(sellerId) {
+  try {
+    const snap = await getDocs(query(collection(db,'reviews'), where('sellerId','==',sellerId), orderBy('createdAt','desc')));
+    sellerReviews = snap.docs.map(d => ({id:d.id,...d.data()}));
+  } catch(e) { sellerReviews = []; }
+  renderReviews();
+}
+
+function renderReviews() {
+  document.getElementById('sp-reviews-count').textContent = sellerReviews.length;
+  if (!sellerReviews.length) {
+    document.getElementById('reviews-list').innerHTML = '';
+    document.getElementById('reviews-empty').style.display = 'flex';
+    document.getElementById('sp-rating').textContent = '—'; return;
+  }
+  document.getElementById('reviews-empty').style.display = 'none';
+  const avg = (sellerReviews.reduce((s,r)=>s+r.stars,0)/sellerReviews.length).toFixed(1);
+  document.getElementById('sp-rating').textContent = avg+'⭐';
+  document.getElementById('reviews-list').innerHTML = sellerReviews.map(r => `
+    <div class="review-card">
+      <div class="review-top"><div class="review-author">@${r.authorUsername||'unknown'}</div><div class="review-stars">${'⭐'.repeat(r.stars)}</div></div>
+      <div class="review-text">${r.text}</div>
+      <div class="review-date">${r.createdAt?.toDate?r.createdAt.toDate().toLocaleDateString('ru'):''}</div>
+      ${isAdmin ? `<button class="review-del" onclick="deleteReview('${r.id}')">🗑 Удалить отзыв</button>` : ''}
+    </div>`).join('');
+}
+
+window.deleteReview = async function(id) {
+  if (!isAdmin) return;
+  try {
+    await deleteDoc(doc(db,'reviews',id));
+    sellerReviews = sellerReviews.filter(r => r.id !== id);
+    renderReviews(); showToast('Отзыв удалён');
+  } catch(e) { showToast('Ошибка'); }
+}
+
+window.openReviewForm = function() {
+  selectedStars = 0;
+  document.getElementById('review-text').value = '';
+  document.querySelectorAll('.star-pick').forEach(s => s.classList.remove('on'));
+  document.getElementById('review-overlay').classList.add('open');
+}
+window.closeReview = e => { if(e.target===document.getElementById('review-overlay')) closeReviewDirect(); }
+window.closeReviewDirect = () => document.getElementById('review-overlay').classList.remove('open');
+window.setStar = function(n) {
+  selectedStars = n;
+  document.querySelectorAll('.star-pick').forEach((s,i) => s.classList.toggle('on', i<n));
+}
+window.submitReview = async function() {
+  const text = document.getElementById('review-text').value.trim();
+  if (!selectedStars || !text) { showToast('Выбери оценку и напиши комментарий'); return; }
+  if (!currentSeller) return;
+  try {
+    await addDoc(collection(db,'reviews'), {
+      sellerId: currentSeller.sellerId, stars: selectedStars, text,
+      authorName: tgUser?(tgUser.first_name+(tgUser.last_name?' '+tgUser.last_name:'')):'Аноним',
+      authorUsername: tgUser?.username||'unknown', createdAt: serverTimestamp(),
+    });
+    showToast('Отзыв опубликован! ✓');
+    closeReviewDirect();
+    await loadSellerReviews(currentSeller.sellerId);
+  } catch(e) { showToast('Ошибка.'); }
+}
+
+// ---- FAVOURITES ----
+window.toggleFav = function(id, e) {
+  e.stopPropagation();
+  favorites = favorites.includes(id) ? favorites.filter(f=>f!==id) : [...favorites,id];
+  localStorage.setItem('cn_favs', JSON.stringify(favorites));
+  e.currentTarget.textContent = favorites.includes(id)?'❤️':'🤍';
+  document.getElementById('nav-fav-icon').textContent = favorites.length?'❤️':'🤍';
+  if (document.getElementById('page-fav').classList.contains('active')) renderFavPage();
+}
+function renderFavPage() {
+  const list = allProducts.filter(p => favorites.includes(p.id));
+  document.getElementById('fav-empty').style.display = list.length?'none':'flex';
+  document.getElementById('fav-grid').innerHTML = list.map(cardHTML).join('');
+}
+
+// ---- SUBMIT ----
+window.selectCat = function(cat, btn) {
+  document.querySelectorAll('#page-submit .cats .cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); selectedCat = cat; selectedSizes = []; renderSizes();
+}
+function renderSizes() {
+  document.getElementById('size-grid').innerHTML = (SIZES[selectedCat]||[]).map(s =>
+    `<button class="size-btn${selectedSizes.includes(s)?' selected':''}" onclick="toggleSize('${s}',this)">${s}</button>`
+  ).join('');
+}
+window.toggleSize = function(s, btn) {
+  selectedSizes = selectedSizes.includes(s)?selectedSizes.filter(x=>x!==s):[...selectedSizes,s];
+  btn.classList.toggle('selected', selectedSizes.includes(s));
+}
+window.onPhotos = function(input) {
+  Array.from(input.files).slice(0,5-uploadedPhotos.length).forEach(f => {
+    const r = new FileReader();
+    r.onload = e => { uploadedPhotos.push(e.target.result); renderPhotoPreview(); };
+    r.readAsDataURL(f);
+  }); input.value='';
+}
+function renderPhotoPreview() {
+  document.getElementById('photo-preview').innerHTML = uploadedPhotos.map((src,i) =>
+    `<div class="photo-thumb-wrap"><img class="photo-thumb" src="${src}"><button class="photo-remove" onclick="removePhoto(${i})">✕</button></div>`
+  ).join('');
+}
+window.removePhoto = i => { uploadedPhotos.splice(i,1); renderPhotoPreview(); }
+window.submitProduct = async function() {
+  const name = document.getElementById('inp-name').value.trim();
+  const price = document.getElementById('inp-price').value.trim();
+  if (!name||!price||!selectedSizes.length||!uploadedPhotos.length) { showToast('Заполни все обязательные поля!'); return; }
+  if (tgUser?.username && bannedUsers.has(tgUser.username)) { showToast('Ваш аккаунт заблокирован'); return; }
+  const btn = document.getElementById('btn-submit');
+  btn.disabled=true; btn.textContent='ПУБЛИКАЦИЯ...';
+  try {
+    const su = tgUser?.username||'unknown';
+    const sn = tgUser?(tgUser.first_name+(tgUser.last_name?' '+tgUser.last_name:'')):'Продавец';
+    const ref = await addDoc(collection(db,'products'), {
+      name, brand:document.getElementById('inp-brand').value.trim(),
+      price:Number(price), desc:document.getElementById('inp-desc').value.trim(),
+      cat:selectedCat, sizes:selectedSizes, photos:uploadedPhotos,
+      sellerUsername:su, sellerName:sn, sellerId:currentUser?.uid||'anon', createdAt:serverTimestamp(),
+    });
+    allProducts.unshift({id:ref.id,name,brand:document.getElementById('inp-brand').value.trim(),price:Number(price),desc:document.getElementById('inp-desc').value.trim(),cat:selectedCat,sizes:selectedSizes,photos:uploadedPhotos,sellerUsername:su,sellerName:sn,sellerId:currentUser?.uid||'anon'});
+    showToast('Товар опубликован! ✓');
+    ['inp-name','inp-brand','inp-price','inp-desc'].forEach(id => document.getElementById(id).value='');
+    uploadedPhotos=[]; selectedSizes=[]; renderPhotoPreview(); renderSizes();
+    showPage('feed', document.getElementById('nav-feed')); renderFeed();
+  } catch(e) { showToast('Ошибка публикации.'); }
+  btn.disabled=false; btn.textContent='ОПУБЛИКОВАТЬ';
+}
+
+// ---- MY PROFILE ----
+function renderMyProfile() {
+  if (tgUser) {
+    document.getElementById('my-profile-name').textContent = tgUser.first_name+(tgUser.last_name?' '+tgUser.last_name:'');
+    document.getElementById('my-profile-user').textContent = '@'+(tgUser.username||'unknown');
+  } else {
+    document.getElementById('my-profile-name').textContent = 'Гость';
+    document.getElementById('my-profile-user').textContent = 'Открой в Telegram';
+  }
+}
+function renderMyProfileProducts() {
+  const list = allProducts.filter(p => currentUser && p.sellerId === currentUser.uid);
+  document.getElementById('my-items').textContent = list.length;
+  document.getElementById('my-empty').style.display = list.length?'none':'flex';
+  document.getElementById('my-grid').innerHTML = list.map(cardHTML).join('');
+}
+
+// ---- ADMIN PAGE ----
+async function renderAdminPage() {
+  if (!isAdmin) return;
+  document.getElementById('adm-products').textContent = allProducts.length;
+  const uniqueUsers = [...new Set(allProducts.map(p => p.sellerUsername))];
+  document.getElementById('adm-users').textContent = uniqueUsers.length;
+  document.getElementById('adm-banned').textContent = bannedUsers.size;
+  try {
+    const rSnap = await getDocs(collection(db,'reviews'));
+    document.getElementById('adm-reviews').textContent = rSnap.size;
+  } catch(e) {}
+
+  // Users list
+  document.getElementById('adm-users-list').innerHTML = uniqueUsers.map(u => {
+    const isBanned = bannedUsers.has(u);
+    const userProds = allProducts.filter(p => p.sellerUsername === u);
+    return `<div class="user-row">
+      <div class="user-row-info">
+        <div class="user-row-name">@${u} ${u===ADMIN_USERNAME?'<span class="admin-badge">ADMIN</span>':''}</div>
+        <div class="user-row-sub">${userProds.length} товаров ${isBanned?'• 🚫 ЗАБЛОКИРОВАН':''}</div>
+      </div>
+      ${u!==ADMIN_USERNAME?`<div class="user-row-actions">
+        ${isBanned
+          ? `<button class="btn-unban" onclick="adminBanUser('${u}',false)">Снять бан</button>`
+          : `<button class="btn-ban" onclick="adminBanUser('${u}',true)">Бан</button>`}
+      </div>`:''}
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:13px;padding:10px 0">Нет пользователей</div>';
+
+  // Products list
+  document.getElementById('adm-products-list').innerHTML = allProducts.slice(0,20).map(p => `
+    <div class="user-row">
+      <div class="user-row-info">
+        <div class="user-row-name">${p.name}</div>
+        <div class="user-row-sub">@${p.sellerUsername||'?'} • ${Number(p.price).toLocaleString('ru')} ₽</div>
+      </div>
+      <div class="user-row-actions">
+        <button class="btn-ban" onclick="adminDeleteProduct('${p.id}')">Удалить</button>
+      </div>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:13px;padding:10px 0">Нет товаров</div>';
+}
+
+window.adminBanUser = async function(username, ban) {
+  try {
+    if (ban) {
+      await setDoc(doc(db,'banned',username), { username, bannedAt: serverTimestamp() });
+      bannedUsers.add(username);
+      showToast(`@${username} заблокирован 🚫`);
+    } else {
+      await deleteDoc(doc(db,'banned',username));
+      bannedUsers.delete(username);
+      showToast(`@${username} разблокирован ✓`);
+    }
+    await loadProducts();
+    renderAdminPage();
+  } catch(e) { showToast('Ошибка'); }
+}
+
+window.adminDeleteProduct = async function(id) {
+  showConfirm('УДАЛИТЬ ТОВАР?','Удалить этот товар навсегда?', async () => {
+    try {
+      await deleteDoc(doc(db,'products',id));
+      allProducts = allProducts.filter(p => p.id !== id);
+      renderFeed(); renderAdminPage(); showToast('Товар удалён');
+    } catch(e) { showToast('Ошибка'); }
+  });
+}
+
+// ---- NAV ----
+window.showPage = function(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  if (name==='fav') renderFavPage();
+  if (name==='profile') { renderMyProfile(); renderMyProfileProducts(); }
+  if (name==='submit') renderSizes();
+  if (name==='admin' && isAdmin) renderAdminPage();
+}
+
+// ---- CONFIRM ----
+function showConfirm(title, text, cb) {
+  confirmCallback = cb;
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  document.getElementById('confirm-yes-btn').onclick = () => {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    if (confirmCallback) confirmCallback();
+  };
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+// ---- TOAST ----
+window.showToast = function(msg) {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// INIT
+document.getElementById('nav-fav-icon').textContent = favorites.length?'❤️':'🤍';
+</script>
+</body>
+</html>
